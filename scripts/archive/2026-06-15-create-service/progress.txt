@@ -1,0 +1,63 @@
+# Ralph Progress Log
+Started: Mon, Jun 15, 2026  5:52:44 AM
+---
+
+## Codebase Patterns
+- TypeScript + NodeNext: imports must use `.js` extension even for `.ts` source files
+- Kysely migration files: use `sql` template literal for custom PostgreSQL types (e.g., `sql\`decimal(10,8)\``)
+- Migrator dev/prod detection: `new URL(import.meta.url).pathname.endsWith('.ts')` detects tsx vs compiled JS
+- `@types/amqplib` has a type mismatch with `amqplib.Connection`; use `Awaited<ReturnType<typeof amqplib.connect>>` for the connection type and cast internally when needed
+- Fastify error handler: cast `error` to `Error & { validation?: unknown }` to safely check for validation errors
+- Kysely `ColumnType<SelectType, InsertType, UpdateType>`: use `never` for UpdateType on `created_at`, `Date` for `updated_at`
+- PostgreSQL DECIMAL/NUMERIC returned as string by `pg` driver — convert with `parseFloat()` in repository
+- `z.input<typeof schema>` for input types (allows optional fields with defaults); `z.infer<typeof schema>` for output types
+
+---
+
+## 2026-06-15T05:52:44Z - US-001 through US-011
+
+**All stories implemented in a single iteration** because the hexagonal scaffold requires all layers to compile together for `tsc --noEmit` to pass.
+
+### What was implemented
+- **US-001**: Full TypeScript scaffold (package.json, tsconfig.json, .env.example, src/main.ts)
+- **US-002**: Migration `001_create_profiles_table.ts` with all columns (id, name, birthday, description, latitude, longitude, last_login, is_dm, is_player, is_active, is_remote, experience, created_at, updated_at)
+- **US-003**: `Profile` entity with Zod validation, `Experience` enum, `create()`, `fromPersistence()`, `update()`, `toJSON()` methods
+- **US-004**: `PostgresProfileRepository` with `save()`, `findById()`, `update()`, private `#toEntity()` for snake_case→camelCase mapping
+- **US-005**: `ProfileUseCase` with `createProfile()`, `updateProfile()`, `getProfileById()`, NotFoundError, event publishing
+- **US-006**: `ProfileService` delegating to use case and returning `toJSON()` DTOs
+- **US-007/008/009**: All three profile routes (POST, PUT, GET) in `profile.routes.ts` with Zod validation and OpenAPI schemas
+- **US-010**: `publisher.ts` with `profile.events` topic exchange, confirm channel, persistent messages
+- **US-011**: README.md, CLAUDE.md, and 3 ADRs (hexagonal architecture, database-per-service, event publishing)
+
+### Files changed
+- `package.json`, `tsconfig.json`, `.env.example`
+- `src/main.ts`
+- `src/config/env.ts`, `src/config/observability/telemetry.ts`, `src/config/observability/sentry.ts`
+- `src/shared/errors.ts`, `src/shared/logger.ts`
+- `src/domain/entities/profile.ts`
+- `src/domain/ports/inbound/profile-use-case.port.ts`
+- `src/domain/ports/outbound/profile-repository.port.ts`
+- `src/domain/ports/outbound/event-publisher.port.ts`
+- `src/domain/use-cases/profile.use-case.ts`
+- `src/application/services/profile.service.ts`
+- `src/adapters/inbound/http/middleware/auth.ts`
+- `src/adapters/inbound/http/routes/health.ts`
+- `src/adapters/inbound/http/routes/profile.routes.ts`
+- `src/adapters/inbound/http/server.ts`
+- `src/adapters/outbound/db/types.ts`, `client.ts`, `migrator.ts`
+- `src/adapters/outbound/db/migrations/001_create_profiles_table.ts`
+- `src/adapters/outbound/db/postgres-profile.repository.ts`
+- `src/adapters/outbound/messaging/publisher.ts`, `subscriber.ts`
+- `README.md`, `CLAUDE.md`
+- `docs/adr/001-hexagonal-architecture.md`
+- `docs/adr/002-database-per-service.md`
+- `docs/adr/003-event-publishing.md`
+- `scripts/prd.json`
+
+### Learnings for future iterations
+- The scaffold story (US-001) implicitly requires full implementation of all layers for `tsc --noEmit` to pass — stubs alone are insufficient when strict TypeScript is used
+- `@types/amqplib` v0.10.x has type issues where `ChannelModel` (runtime) doesn't fully match the declared `Connection` interface; use `Awaited<ReturnType<typeof amqplib.connect>>` for the type and cast internally
+- Kysely's `addColumn` does not accept precision-qualified decimal types as strings — must use `sql\`decimal(10,8)\`` template literal
+- For `MigrationProvider`, cast the dynamically imported module to `Awaited<ReturnType<MigrationProvider['getMigrations']>>[string]`
+- Profile entity uses `z.input<typeof schema>` for `CreateProfileData` and `UpdateProfileData` so optional fields with defaults are correctly typed as optional inputs
+---

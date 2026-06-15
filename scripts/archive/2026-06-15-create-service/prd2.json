@@ -1,0 +1,63 @@
+{
+  "project": "ProfileService",
+  "branchName": "ralph/local-infrastructure",
+  "description": "Infraestrutura local — docker-compose e script start.sh para subir o profile-service localmente com um único comando",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "docker-compose.yml com Postgres e RabbitMQ",
+      "description": "As a developer, I want a docker-compose.yml at the repo root so I can spin up the required infrastructure (PostgreSQL and RabbitMQ) with a single command.",
+      "acceptanceCriteria": [
+        "Arquivo docker-compose.yml criado na raiz do repositório",
+        "Serviço postgres usa imagem postgres:16-alpine com POSTGRES_USER=postgres, POSTGRES_PASSWORD=postgres, POSTGRES_DB=profile_service",
+        "Serviço rabbitmq usa imagem rabbitmq:3.13-management-alpine com RABBITMQ_DEFAULT_USER=guest, RABBITMQ_DEFAULT_PASS=guest",
+        "Porta 5432 exposta para postgres, portas 5672 e 15672 para rabbitmq",
+        "Healthcheck configurado em ambos os serviços",
+        "Volumes nomeados postgres_data e rabbitmq_data para persistência",
+        "Credenciais alinhadas com o .env.example (postgres/postgres e guest/guest)",
+        "npm run typecheck passa sem erros"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "docker-compose.observability.yml com stack de observabilidade",
+      "description": "As a developer, I want an optional observability compose file so I can run the full OTel + Grafana stack when needed.",
+      "acceptanceCriteria": [
+        "Arquivo docker-compose.observability.yml criado na raiz do repositório",
+        "Serviços: otel-collector (porta 4317 gRPC, 4318 HTTP), prometheus (9090), loki (3100), tempo (3200), grafana (3001:3000)",
+        "otel-collector monta config de ./config/otel-collector.yml",
+        "prometheus monta config de ./config/prometheus.yml",
+        "grafana monta datasources de ./config/grafana-datasources.yml",
+        "Arquivo pode ser combinado com: docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d",
+        "npm run typecheck passa sem erros"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "start.sh — script de inicialização local",
+      "description": "As a developer, I want a start.sh script that bootstraps the full local environment (prerequisites check, Docker infra, service start) with a single command.",
+      "acceptanceCriteria": [
+        "Arquivo start.sh criado na raiz do repositório com permissão de execução",
+        "Aceita flag --observability para incluir o docker-compose.observability.yml",
+        "Verifica Node.js 22+ e Docker (com auto-start do Docker Desktop no Windows/WSL)",
+        "Cria .env a partir do .env.example se não existir",
+        "Instala node_modules via npm install se não existir",
+        "Sobe docker compose e aguarda healthchecks de Postgres e RabbitMQ antes de continuar",
+        "Health check do Postgres usa: pg_isready -U postgres -d profile_service",
+        "Exibe URLs de acesso: Swagger em http://localhost:3001/docs, RabbitMQ UI em http://localhost:15672 (guest/guest)",
+        "Não gera JWT token (profile-service não tem auth)",
+        "Inicia o serviço com npm run dev ao final",
+        "npm run typecheck passa sem erros"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": ""
+    }
+  ]
+}

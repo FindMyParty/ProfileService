@@ -1,0 +1,186 @@
+{
+  "project": "ProfileService",
+  "branchName": "feature/createService",
+  "description": "Profile Service — microsserviço TypeScript para armazenar e gerenciar perfis de usuários da plataforma FindMyParty, com API REST, persistência PostgreSQL e eventos RabbitMQ",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Scaffold do serviço em TypeScript",
+      "description": "As a developer, I want to scaffold the Profile Service in TypeScript based on the skeleton-service structure so I have a working typed base with all infra wired up.",
+      "acceptanceCriteria": [
+        "Estrutura de pastas espelha o skeleton-service com arquivos .ts",
+        "package.json com name: 'profile-service', dependências do skeleton + typescript, tsx, @types/node, @types/pg, @types/amqplib",
+        "tsconfig.json com strict: true, module: NodeNext, moduleResolution: NodeNext, outDir: dist",
+        "Scripts: dev usa tsx watch, build usa tsc, start executa dist/main.js",
+        "src/main.ts inicializa telemetria, conecta Postgres, roda migrations, conecta RabbitMQ e sobe servidor Fastify",
+        ".env.example com todas as variáveis necessárias",
+        "tsc --noEmit passa sem erros"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "Implemented in full scaffold iteration. All source files created, tsc --noEmit passes."
+    },
+    {
+      "id": "US-002",
+      "title": "Migration de criação da tabela profiles",
+      "description": "As a developer, I want a migration that creates the profiles table so the schema is version-controlled and reproducible.",
+      "acceptanceCriteria": [
+        "Arquivo src/adapters/outbound/db/migrations/001_create_profiles_table.ts com funções up e down",
+        "A função up cria a tabela profiles com todas as colunas: id, name, birthday, description, latitude, longitude, last_login, is_dm, is_player, is_active, is_remote, experience, created_at, updated_at",
+        "A função down remove a tabela profiles",
+        "Migration executa sem erro em um banco PostgreSQL limpo",
+        "tsc --noEmit passa sem erros"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Migration created with all columns. Uses sql template for decimal types. ifNotExists for idempotency."
+    },
+    {
+      "id": "US-003",
+      "title": "Entidade de domínio Profile",
+      "description": "As a developer, I want a domain entity Profile that encapsulates all profile data and validation rules so business logic stays in the domain layer.",
+      "acceptanceCriteria": [
+        "Arquivo src/domain/entities/profile.ts com classe Profile",
+        "Campos: id, name, birthday, description, latitude, longitude, lastLogin, isDM, isPlayer, isActive, isRemote, experience, createdAt, updatedAt",
+        "experience aceita apenas: beginner, intermediate, veteran",
+        "Método estático Profile.create(data) valida com Zod e aceita id fornecido externamente (não gera UUID)",
+        "Método estático Profile.fromPersistence(row) reconstrói a entidade a partir de uma linha do banco",
+        "Método profile.update(data) aplica atualização parcial e atualiza updatedAt",
+        "Método profile.toJSON() retorna objeto simples serializável",
+        "Zod rejeita dados inválidos com mensagem descritiva",
+        "tsc --noEmit passa sem erros"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": "Full entity with Zod validation, Experience enum, all methods implemented."
+    },
+    {
+      "id": "US-004",
+      "title": "Repositório PostgreSQL de Profile",
+      "description": "As a developer, I want a PostgreSQL repository implementation so profiles are persisted and retrieved correctly.",
+      "acceptanceCriteria": [
+        "Arquivo src/adapters/outbound/db/postgres-profile.repository.ts",
+        "Método save(profile) insere no banco e retorna entidade reconstruída",
+        "Método findById(id) retorna Profile ou null",
+        "Método update(profile) atualiza linha existente e retorna entidade atualizada",
+        "Colunas snake_case no banco mapeadas para camelCase na entidade via método #toEntity(row)",
+        "Queries usam Kysely (sem SQL raw fora deste arquivo)",
+        "tsc --noEmit passa sem erros"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": "Full PostgreSQL repository with Kysely queries. Private #toEntity for snake_case->camelCase mapping."
+    },
+    {
+      "id": "US-005",
+      "title": "Use Case de Profile",
+      "description": "As a developer, I want a use case layer that orchestrates creation and update of profiles and publishes events so business rules are enforced consistently.",
+      "acceptanceCriteria": [
+        "Arquivo src/domain/use-cases/profile.use-case.ts com classe ProfileUseCase",
+        "Método createProfile(data): cria entidade, persiste, publica evento profile.profile.created com estado completo, retorna profile",
+        "Método updateProfile(id, data): busca profile (lança NotFoundError se não existir), aplica update, persiste, publica evento profile.profile.updated, retorna profile",
+        "Método getProfileById(id): busca e retorna profile (lança NotFoundError se não existir)",
+        "Eventos seguem routing key profile.profile.[action]",
+        "tsc --noEmit passa sem erros"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": "Full use case with NotFoundError, event publishing to profile.profile.created and profile.profile.updated."
+    },
+    {
+      "id": "US-006",
+      "title": "Application Service de Profile",
+      "description": "As a developer, I want an application service that wraps the use case and converts domain entities to DTOs so routes don't depend on domain internals.",
+      "acceptanceCriteria": [
+        "Arquivo src/application/services/profile.service.ts com classe ProfileService",
+        "Métodos createProfile(data), updateProfile(id, data), getProfileById(id) delegam ao use case e chamam .toJSON() no resultado",
+        "tsc --noEmit passa sem erros"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": "ProfileService delegates to ProfileUseCase and returns toJSON() DTOs."
+    },
+    {
+      "id": "US-007",
+      "title": "Endpoint POST /profiles — Criar perfil",
+      "description": "As a client, I want to call POST /profiles to create a new profile so I can register user data.",
+      "acceptanceCriteria": [
+        "Rota POST /profiles registrada em src/adapters/inbound/http/routes/profile.routes.ts",
+        "Body obrigatório: id (UUID), name (string 1-255)",
+        "Body opcional: birthday (ISO date), description (text max 1000), latitude (float), longitude (float), isDM (bool), isPlayer (bool), isRemote (bool), experience (enum)",
+        "Retorna 201 Created com { data: Profile }",
+        "Retorna 400 Bad Request se validação falhar",
+        "Retorna 409 Conflict se já existir um profile com o mesmo id",
+        "Schema OpenAPI documentado",
+        "tsc --noEmit passa sem erros"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": "POST /profiles route with Zod validation and OpenAPI schema. 409 handled by DB unique constraint propagated as error."
+    },
+    {
+      "id": "US-008",
+      "title": "Endpoint PUT /profiles/:id — Atualizar perfil",
+      "description": "As a client, I want to call PUT /profiles/:id to update an existing profile so I can keep user data current.",
+      "acceptanceCriteria": [
+        "Rota PUT /profiles/:id registrada em profile.routes.ts",
+        "Todos os campos do body são opcionais (atualização parcial)",
+        "Campos atualizáveis: name, birthday, description, latitude, longitude, isDM, isPlayer, isActive, isRemote, experience",
+        "Retorna 200 OK com { data: Profile }",
+        "Retorna 404 Not Found se o profile não existir",
+        "Retorna 400 Bad Request se validação falhar",
+        "Schema OpenAPI documentado",
+        "tsc --noEmit passa sem erros"
+      ],
+      "priority": 8,
+      "passes": true,
+      "notes": "PUT /profiles/:id with all optional fields, 404 via NotFoundError from use case."
+    },
+    {
+      "id": "US-009",
+      "title": "Endpoint GET /profiles/:id — Buscar perfil",
+      "description": "As a client, I want to call GET /profiles/:id to retrieve a profile so I can display user information.",
+      "acceptanceCriteria": [
+        "Rota GET /profiles/:id registrada em profile.routes.ts",
+        "Retorna 200 OK com { data: Profile }",
+        "Retorna 404 Not Found se o profile não existir",
+        "Schema OpenAPI documentado",
+        "tsc --noEmit passa sem erros"
+      ],
+      "priority": 9,
+      "passes": true,
+      "notes": "GET /profiles/:id with OpenAPI schema. 404 via NotFoundError from use case."
+    },
+    {
+      "id": "US-010",
+      "title": "Publicação de eventos no RabbitMQ",
+      "description": "As a downstream service, I want to receive RabbitMQ events whenever a profile is created or updated so I can react to state changes.",
+      "acceptanceCriteria": [
+        "Exchange profile.events do tipo topic é asserted na inicialização",
+        "Evento profile.profile.created publicado após criação com payload = profile.toJSON()",
+        "Evento profile.profile.updated publicado após atualização com payload = profile.toJSON()",
+        "Mensagens persistentes ({ persistent: true })",
+        "Publisher usa confirm channel (aguarda ack do broker antes de resolver a Promise)",
+        "tsc --noEmit passa sem erros"
+      ],
+      "priority": 10,
+      "passes": true,
+      "notes": "publisher.ts asserts profile.events topic exchange. Persistent messages. Confirm channel with ack callback."
+    },
+    {
+      "id": "US-011",
+      "title": "Arquivos de contexto e documentação",
+      "description": "As a developer joining the project, I want context documentation files so I can understand the service's architecture, decisions, and how to run it.",
+      "acceptanceCriteria": [
+        "README.md com: descrição do serviço, pré-requisitos, como rodar localmente, variáveis de ambiente, endpoints principais",
+        "CLAUDE.md com: arquitetura hexagonal, decisões técnicas, padrões de código, como estender o serviço",
+        "docs/adr/001-hexagonal-architecture.md explicando a escolha da arquitetura hexagonal",
+        "docs/adr/002-database-per-service.md explicando o padrão database-per-service",
+        "docs/adr/003-event-publishing.md explicando a decisão de publicar eventos a cada mutação"
+      ],
+      "priority": 11,
+      "passes": true,
+      "notes": "README.md, CLAUDE.md, and 3 ADRs created."
+    }
+  ]
+}
