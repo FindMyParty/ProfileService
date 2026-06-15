@@ -27,3 +27,16 @@ Started: Sun, Jun 15, 2026  (ralph/local-infrastructure)
   - `start_period` on postgres healthcheck (10s) gives time for the container to initialize before health probes count failures
   - Credentials in docker-compose.yml and .env.example must stay in sync (postgres/postgres and guest/guest)
 ---
+
+## 2026-06-15 - US-002
+- Created `docker-compose.observability.yml` at the repo root with otel-collector, prometheus, loki, tempo, and grafana services
+- Created `config/otel-collector.yml`, `config/prometheus.yml`, `config/grafana-datasources.yml`
+- Grafana maps host port 3001 to container port 3000 (service runs on 3001 to avoid conflict)
+- OTel collector exposes gRPC on 4317 and HTTP on 4318; forwards traces to tempo, metrics to prometheus, logs to loki
+- Files changed: `docker-compose.observability.yml` (new), `config/otel-collector.yml` (new), `config/prometheus.yml` (new), `config/grafana-datasources.yml` (new), `scripts/prd.json`, `scripts/progress.txt`
+- **Learnings for future iterations:**
+  - Grafana datasources provisioning path: `/etc/grafana/provisioning/datasources/`
+  - OTel collector loki exporter endpoint: `http://loki:3100/loki/api/v1/push`
+  - Tempo OTLP receiver on port 4317 — use `insecure: true` for local TLS
+  - Combine with base infra: `docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d`
+---

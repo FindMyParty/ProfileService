@@ -35,7 +35,7 @@
         "npm run typecheck passa sem erros"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
