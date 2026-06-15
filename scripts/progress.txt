@@ -40,3 +40,18 @@ Started: Sun, Jun 15, 2026  (ralph/local-infrastructure)
   - Tempo OTLP receiver on port 4317 — use `insecure: true` for local TLS
   - Combine with base infra: `docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d`
 ---
+
+## 2026-06-15 - US-003
+- Created `start.sh` at the repo root with execute permission (chmod +x)
+- Script checks Node.js 22+, Docker (auto-starts Docker Desktop on Windows/WSL and macOS), copies .env.example→.env if missing, runs npm install if node_modules absent
+- Accepts `--observability` flag to add docker-compose.observability.yml to compose invocation
+- Waits for Postgres via `docker compose exec pg_isready -U postgres -d profile_service` and RabbitMQ via `rabbitmq-diagnostics check_port_connectivity`
+- Displays Swagger (http://localhost:3001/docs) and RabbitMQ UI (http://localhost:15672) URLs; no JWT token generated
+- Ends with `npm run dev`
+- Files changed: `start.sh` (new), `scripts/prd.json`, `scripts/progress.txt`
+- **Learnings for future iterations:**
+  - `docker compose exec -T` is needed for non-interactive exec in scripts (no pseudo-TTY)
+  - Windows Docker Desktop auto-start path: `C:\Program Files\Docker\Docker\Docker Desktop.exe` via `cmd.exe /c start /B`
+  - `set -euo pipefail` at top of bash scripts — `pipefail` catches errors in pipes, `u` catches unset vars
+  - Grafana port in observability stack is 3001:3000 (host:container) — note this conflicts with the service port if both run simultaneously; display URL should reflect this
+---
