@@ -1,62 +1,83 @@
 {
   "project": "ProfileService",
-  "branchName": "ralph/local-infrastructure",
-  "description": "Infraestrutura local — docker-compose e script start.sh para subir o profile-service localmente com um único comando",
+  "branchName": "ralph/database-migrations",
+  "description": "Database Migrations — Pictures, Themes, Characters, Classes e Systems",
   "userStories": [
     {
       "id": "US-001",
-      "title": "docker-compose.yml com Postgres e RabbitMQ",
-      "description": "As a developer, I want a docker-compose.yml at the repo root so I can spin up the required infrastructure (PostgreSQL and RabbitMQ) with a single command.",
+      "title": "Criar migration 002_extend_profile_tables.ts com estrutura base",
+      "description": "As a developer, I need to create the migration file with correct imports, up() and down() function signatures, and the pictures table so the file is ready for extension.",
       "acceptanceCriteria": [
-        "Arquivo docker-compose.yml criado na raiz do repositório",
-        "Serviço postgres usa imagem postgres:16-alpine com POSTGRES_USER=postgres, POSTGRES_PASSWORD=postgres, POSTGRES_DB=profile_service",
-        "Serviço rabbitmq usa imagem rabbitmq:3.13-management-alpine com RABBITMQ_DEFAULT_USER=guest, RABBITMQ_DEFAULT_PASS=guest",
-        "Porta 5432 exposta para postgres, portas 5672 e 15672 para rabbitmq",
-        "Healthcheck configurado em ambos os serviços",
-        "Volumes nomeados postgres_data e rabbitmq_data para persistência",
-        "Credenciais alinhadas com o .env.example (postgres/postgres e guest/guest)",
-        "npm run typecheck passa sem erros"
+        "Arquivo criado em src/adapters/outbound/db/migrations/002_extend_profile_tables.ts",
+        "Importa `sql` e `Kysely` de 'kysely' exatamente como em 001_create_profiles_table.ts",
+        "Exporta `async function up(db: Kysely<unknown>): Promise<void>`",
+        "Exporta `async function down(db: Kysely<unknown>): Promise<void>`",
+        "Tabela `pictures` criada em up(): id_profile UUID NOT NULL (FK → profiles.id ON DELETE CASCADE), pic VARCHAR(2048) NOT NULL, is_primary BOOLEAN NOT NULL DEFAULT false, PRIMARY KEY (id_profile, pic)",
+        "Typecheck passes"
       ],
       "priority": 1,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-002",
-      "title": "docker-compose.observability.yml com stack de observabilidade",
-      "description": "As a developer, I want an optional observability compose file so I can run the full OTel + Grafana stack when needed.",
+      "title": "Adicionar tabelas themes e profile_themes na migration",
+      "description": "As a developer, I need the themes lookup table and its join table with profiles added to the migration file.",
       "acceptanceCriteria": [
-        "Arquivo docker-compose.observability.yml criado na raiz do repositório",
-        "Serviços: otel-collector (porta 4317 gRPC, 4318 HTTP), prometheus (9090), loki (3100), tempo (3200), grafana (3001:3000)",
-        "otel-collector monta config de ./config/otel-collector.yml",
-        "prometheus monta config de ./config/prometheus.yml",
-        "grafana monta datasources de ./config/grafana-datasources.yml",
-        "Arquivo pode ser combinado com: docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d",
-        "npm run typecheck passa sem erros"
+        "Tabela `themes` criada em up(): id UUID PRIMARY KEY, name VARCHAR(255) NOT NULL UNIQUE",
+        "Tabela `profile_themes` criada em up(): id_profile UUID NOT NULL (FK → profiles.id ON DELETE CASCADE), id_themes UUID NOT NULL (FK → themes.id ON DELETE CASCADE), PRIMARY KEY (id_profile, id_themes)",
+        "`themes` é criada antes de `profile_themes` em up()",
+        "`profile_themes` é dropada antes de `themes` em down()",
+        "Typecheck passes"
       ],
       "priority": 2,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-003",
-      "title": "start.sh — script de inicialização local",
-      "description": "As a developer, I want a start.sh script that bootstraps the full local environment (prerequisites check, Docker infra, service start) with a single command.",
+      "title": "Adicionar tabela characters na migration",
+      "description": "As a developer, I need the characters table added to the migration file so profiles can have RPG characters.",
       "acceptanceCriteria": [
-        "Arquivo start.sh criado na raiz do repositório com permissão de execução",
-        "Aceita flag --observability para incluir o docker-compose.observability.yml",
-        "Verifica Node.js 22+ e Docker (com auto-start do Docker Desktop no Windows/WSL)",
-        "Cria .env a partir do .env.example se não existir",
-        "Instala node_modules via npm install se não existir",
-        "Sobe docker compose e aguarda healthchecks de Postgres e RabbitMQ antes de continuar",
-        "Health check do Postgres usa: pg_isready -U postgres -d profile_service",
-        "Exibe URLs de acesso: Swagger em http://localhost:3001/docs, RabbitMQ UI em http://localhost:15672 (guest/guest)",
-        "Não gera JWT token (profile-service não tem auth)",
-        "Inicia o serviço com npm run dev ao final",
-        "npm run typecheck passa sem erros"
+        "Tabela `characters` criada em up(): id UUID PRIMARY KEY, id_profile UUID NOT NULL (FK → profiles.id ON DELETE CASCADE), name VARCHAR(255) NOT NULL, background VARCHAR(500), level SMALLINT NOT NULL DEFAULT 1, is_alive BOOLEAN NOT NULL DEFAULT true",
+        "`characters` é dropada antes de `profile_themes` em down()",
+        "Typecheck passes"
       ],
       "priority": 3,
-      "passes": true,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Adicionar tabelas classes, characters_classes e profile_classes na migration",
+      "description": "As a developer, I need the classes lookup table and its join tables for characters and profiles added to the migration file.",
+      "acceptanceCriteria": [
+        "Tabela `classes` criada em up(): id UUID PRIMARY KEY, name VARCHAR(255) NOT NULL UNIQUE",
+        "Tabela `characters_classes` criada em up(): id_characters UUID NOT NULL (FK → characters.id ON DELETE CASCADE), id_classes UUID NOT NULL (FK → classes.id ON DELETE CASCADE), PRIMARY KEY (id_characters, id_classes)",
+        "Tabela `profile_classes` criada em up(): id_profile UUID NOT NULL (FK → profiles.id ON DELETE CASCADE), id_classes UUID NOT NULL (FK → classes.id ON DELETE CASCADE), PRIMARY KEY (id_profile, id_classes)",
+        "`classes` é criada antes de `characters_classes` e `profile_classes` em up()",
+        "`characters_classes` e `profile_classes` são dropadas antes de `classes` em down()",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Adicionar tabelas systems, characters_systems e profile_systems na migration",
+      "description": "As a developer, I need the systems lookup table and its join tables for characters and profiles added to the migration file, completing the full migration with a correct down() order.",
+      "acceptanceCriteria": [
+        "Tabela `systems` criada em up(): id UUID PRIMARY KEY, name VARCHAR(255) NOT NULL UNIQUE",
+        "Tabela `characters_systems` criada em up(): id_characters UUID NOT NULL (FK → characters.id ON DELETE CASCADE), id_systems UUID NOT NULL (FK → systems.id ON DELETE CASCADE), PRIMARY KEY (id_characters, id_systems)",
+        "Tabela `profile_systems` criada em up(): id_profile UUID NOT NULL (FK → profiles.id ON DELETE CASCADE), id_systems UUID NOT NULL (FK → systems.id ON DELETE CASCADE), PRIMARY KEY (id_profile, id_systems)",
+        "`systems` é criada antes de `characters_systems` e `profile_systems` em up()",
+        "down() dropa todas as 11 tabelas na ordem inversa da criação, sem erros de FK",
+        "Ordem de drop em down(): profile_systems, characters_systems, systems, profile_classes, characters_classes, classes, characters, profile_themes, themes, pictures",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false,
       "notes": ""
     }
   ]
