@@ -30,9 +30,23 @@ export async function up(db: Kysely<unknown>): Promise<void> {
     )
     .addPrimaryKeyConstraint('profile_themes_pkey', ['id_profile', 'id_themes'])
     .execute();
+
+  await db.schema
+    .createTable('characters')
+    .ifNotExists()
+    .addColumn('id', 'uuid', (col) => col.primaryKey())
+    .addColumn('id_profile', 'uuid', (col) =>
+      col.notNull().references('profiles.id').onDelete('cascade'),
+    )
+    .addColumn('name', 'varchar(255)', (col) => col.notNull())
+    .addColumn('background', 'varchar(500)')
+    .addColumn('level', 'int2', (col) => col.notNull().defaultTo(1))
+    .addColumn('is_alive', 'boolean', (col) => col.notNull().defaultTo(true))
+    .execute();
 }
 
 export async function down(db: Kysely<unknown>): Promise<void> {
+  await db.schema.dropTable('characters').execute();
   await db.schema.dropTable('profile_themes').execute();
   await db.schema.dropTable('themes').execute();
   await db.schema.dropTable('pictures').execute();
