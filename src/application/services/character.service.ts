@@ -1,5 +1,5 @@
 import type { ICharacterUseCase } from '../../domain/ports/inbound/character-use-case.port.js';
-import type { CreateCharacterData } from '../../domain/entities/character.js';
+import type { CreateCharacterData, UpdateCharacterData } from '../../domain/entities/character.js';
 
 export class CharacterService {
   #characterUseCase: ICharacterUseCase;
@@ -21,5 +21,10 @@ export class CharacterService {
   async listCharactersByProfile(idProfile: string) {
     const characters = await this.#characterUseCase.listCharactersByProfile(idProfile);
     return characters.map((c) => c.toJSON());
+  }
+
+  async updateCharacter(id: string, data: UpdateCharacterData) {
+    const character = await this.#characterUseCase.updateCharacter(id, data);
+    return character.toJSON();
   }
 }

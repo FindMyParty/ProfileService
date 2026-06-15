@@ -4,4 +4,5 @@ export interface ICharacterRepository {
   save(character: Character): Promise<Character>;
   findById(id: string): Promise<Character | null>;
   findByProfileId(idProfile: string): Promise<Character[]>;
+  update(character: Character): Promise<Character>;
 }

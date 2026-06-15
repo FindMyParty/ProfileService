@@ -41,12 +41,42 @@ export interface CharacterTable {
   is_alive: boolean;
 }
 
+export interface ProfileThemesTable {
+  id_profile: string;
+  id_themes: string;
+}
+
+export interface ProfileClassesTable {
+  id_profile: string;
+  id_classes: string;
+}
+
+export interface ProfileSystemsTable {
+  id_profile: string;
+  id_systems: string;
+}
+
+export interface CharactersClassesTable {
+  id_characters: string;
+  id_classes: string;
+}
+
+export interface CharactersSystemsTable {
+  id_characters: string;
+  id_systems: string;
+}
+
 export interface Database {
   profiles: ProfileTable;
   themes: ThemeTable;
   classes: RpgClassTable;
   systems: SystemTable;
   characters: CharacterTable;
+  profile_themes: ProfileThemesTable;
+  profile_classes: ProfileClassesTable;
+  profile_systems: ProfileSystemsTable;
+  characters_classes: CharactersClassesTable;
+  characters_systems: CharactersSystemsTable;
 }
 
 export type ProfileRow = Selectable<ProfileTable>;

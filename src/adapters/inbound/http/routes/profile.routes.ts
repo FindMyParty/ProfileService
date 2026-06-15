@@ -15,6 +15,9 @@ const createProfileBody = z.object({
   isPlayer: z.boolean().optional(),
   isRemote: z.boolean().optional(),
   experience: z.enum(experienceEnum).optional(),
+  classIds: z.array(z.string().uuid()).optional(),
+  systemIds: z.array(z.string().uuid()).optional(),
+  themeIds: z.array(z.string().uuid()).optional(),
 });
 
 const userIdHeader = z.object({ 'x-user-id': z.string().uuid() });
@@ -30,11 +33,22 @@ const updateProfileBody = z.object({
   isActive: z.boolean().optional(),
   isRemote: z.boolean().optional(),
   experience: z.enum(experienceEnum).optional(),
+  classIds: z.array(z.string().uuid()).optional(),
+  systemIds: z.array(z.string().uuid()).optional(),
+  themeIds: z.array(z.string().uuid()).optional(),
 });
 
 const idParams = z.object({
   id: z.string().uuid(),
 });
+
+const associationItemSchema = {
+  type: 'object',
+  properties: {
+    id: { type: 'string', format: 'uuid' },
+    name: { type: 'string' },
+  },
+};
 
 const profileResponseSchema = {
   $id: 'Profile',
@@ -54,6 +68,9 @@ const profileResponseSchema = {
     experience: { type: 'string', enum: experienceEnum },
     createdAt: { type: 'string', format: 'date-time' },
     updatedAt: { type: 'string', format: 'date-time' },
+    classes: { type: 'array', items: associationItemSchema },
+    systems: { type: 'array', items: associationItemSchema },
+    themes: { type: 'array', items: associationItemSchema },
   },
 };
 
@@ -98,6 +115,9 @@ export default async function profileRoutes(
             isPlayer: { type: 'boolean' },
             isRemote: { type: 'boolean' },
             experience: { type: 'string', enum: experienceEnum },
+            classIds: { type: 'array', items: { type: 'string', format: 'uuid' } },
+            systemIds: { type: 'array', items: { type: 'string', format: 'uuid' } },
+            themeIds: { type: 'array', items: { type: 'string', format: 'uuid' } },
           },
         },
         response: {
@@ -114,11 +134,14 @@ export default async function profileRoutes(
       const result = createProfileBody.safeParse(request.body);
       if (!result.success) throw new ValidationError(result.error.issues[0].message);
 
-      const { birthday, ...rest } = result.data;
+      const { birthday, classIds, systemIds, themeIds, ...rest } = result.data;
       const data = await profileService.createProfile({
         id: headerResult.data['x-user-id'],
         ...rest,
         birthday: birthday ? new Date(birthday) : undefined,
+        classIds,
+        systemIds,
+        themeIds,
       });
 
       return reply.status(201).send({ data });
@@ -145,6 +168,9 @@ export default async function profileRoutes(
             isActive: { type: 'boolean' },
             isRemote: { type: 'boolean' },
             experience: { type: 'string', enum: experienceEnum },
+            classIds: { type: 'array', items: { type: 'string', format: 'uuid' } },
+            systemIds: { type: 'array', items: { type: 'string', format: 'uuid' } },
+            themeIds: { type: 'array', items: { type: 'string', format: 'uuid' } },
           },
         },
         response: {
@@ -165,12 +191,15 @@ export default async function profileRoutes(
         throw new ValidationError(bodyResult.error.issues[0].message);
       }
 
-      const { birthday, ...rest } = bodyResult.data;
+      const { birthday, classIds, systemIds, themeIds, ...rest } = bodyResult.data;
       const data = await profileService.updateProfile(paramsResult.data.id, {
         ...rest,
         birthday: birthday !== undefined
           ? (birthday !== null ? new Date(birthday) : null)
           : undefined,
+        classIds,
+        systemIds,
+        themeIds,
       });
 
       return reply.status(200).send({ data });
