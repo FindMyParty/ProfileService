@@ -9,7 +9,7 @@ const characterSchema = z.object({
   isAlive: z.boolean().default(true),
 });
 
-const createCharacterSchema = characterSchema;
+const createCharacterSchema = characterSchema.omit({ id: true });
 
 export type CharacterData = z.infer<typeof characterSchema>;
 export type CreateCharacterData = z.input<typeof createCharacterSchema>;
@@ -33,7 +33,7 @@ export class Character {
 
   static create(data: unknown): Character {
     const parsed = createCharacterSchema.parse(data);
-    return new Character(parsed);
+    return new Character({ ...parsed, id: crypto.randomUUID() });
   }
 
   static fromPersistence(row: {

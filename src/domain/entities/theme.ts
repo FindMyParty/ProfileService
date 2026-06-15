@@ -5,6 +5,8 @@ const themeSchema = z.object({
   name: z.string().min(1).max(255),
 });
 
+const createThemeSchema = themeSchema.omit({ id: true });
+
 export type ThemeData = z.infer<typeof themeSchema>;
 
 export class Theme {
@@ -17,8 +19,8 @@ export class Theme {
   }
 
   static create(data: unknown): Theme {
-    const parsed = themeSchema.parse(data);
-    return new Theme(parsed);
+    const parsed = createThemeSchema.parse(data);
+    return new Theme({ ...parsed, id: crypto.randomUUID() });
   }
 
   static fromPersistence(row: { id: string; name: string }): Theme {

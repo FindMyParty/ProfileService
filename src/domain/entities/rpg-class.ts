@@ -5,6 +5,8 @@ const rpgClassSchema = z.object({
   name: z.string().min(1).max(255),
 });
 
+const createRpgClassSchema = rpgClassSchema.omit({ id: true });
+
 export type RpgClassData = z.infer<typeof rpgClassSchema>;
 
 export class RpgClass {
@@ -17,8 +19,8 @@ export class RpgClass {
   }
 
   static create(data: unknown): RpgClass {
-    const parsed = rpgClassSchema.parse(data);
-    return new RpgClass(parsed);
+    const parsed = createRpgClassSchema.parse(data);
+    return new RpgClass({ ...parsed, id: crypto.randomUUID() });
   }
 
   static fromPersistence(row: { id: string; name: string }): RpgClass {

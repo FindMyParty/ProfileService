@@ -5,6 +5,8 @@ const systemSchema = z.object({
   name: z.string().min(1).max(255),
 });
 
+const createSystemSchema = systemSchema.omit({ id: true });
+
 export type SystemData = z.infer<typeof systemSchema>;
 
 export class System {
@@ -17,8 +19,8 @@ export class System {
   }
 
   static create(data: unknown): System {
-    const parsed = systemSchema.parse(data);
-    return new System(parsed);
+    const parsed = createSystemSchema.parse(data);
+    return new System({ ...parsed, id: crypto.randomUUID() });
   }
 
   static fromPersistence(row: { id: string; name: string }): System {

@@ -4,7 +4,6 @@ import type { CharacterService } from '../../../../application/services/characte
 import { ValidationError } from '../../../../shared/errors.js';
 
 const createCharacterBody = z.object({
-  id: z.string().uuid(),
   idProfile: z.string().uuid(),
   name: z.string().min(1).max(255),
   background: z.string().max(500).optional(),
@@ -52,9 +51,8 @@ export default async function characterRoutes(
         summary: 'Criar personagem',
         body: {
           type: 'object',
-          required: ['id', 'idProfile', 'name'],
+          required: ['idProfile', 'name'],
           properties: {
-            id: { type: 'string', format: 'uuid' },
             idProfile: { type: 'string', format: 'uuid' },
             name: { type: 'string', minLength: 1, maxLength: 255 },
             background: { type: 'string', maxLength: 500 },

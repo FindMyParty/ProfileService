@@ -6,7 +6,6 @@ import { ValidationError, ConflictError } from '../../../../shared/errors.js';
 const experienceEnum = ['beginner', 'intermediate', 'veteran'] as const;
 
 const createProfileBody = z.object({
-  id: z.string().uuid(),
   name: z.string().min(1).max(255),
   birthday: z.string().date().optional(),
   description: z.string().max(1000).optional(),
@@ -17,6 +16,8 @@ const createProfileBody = z.object({
   isRemote: z.boolean().optional(),
   experience: z.enum(experienceEnum).optional(),
 });
+
+const userIdHeader = z.object({ 'x-user-id': z.string().uuid() });
 
 const updateProfileBody = z.object({
   name: z.string().min(1).max(255).optional(),
@@ -77,11 +78,17 @@ export default async function profileRoutes(
       schema: {
         tags: ['Profiles'],
         summary: 'Criar perfil',
+        headers: {
+          type: 'object',
+          required: ['x-user-id'],
+          properties: {
+            'x-user-id': { type: 'string', format: 'uuid', description: 'UUID do usuário autenticado, injetado pelo API Gateway' },
+          },
+        },
         body: {
           type: 'object',
-          required: ['id', 'name'],
+          required: ['name'],
           properties: {
-            id: { type: 'string', format: 'uuid', description: 'UUID do usuário autenticado' },
             name: { type: 'string', minLength: 1, maxLength: 255 },
             birthday: { type: 'string', format: 'date' },
             description: { type: 'string', maxLength: 1000 },
@@ -101,13 +108,15 @@ export default async function profileRoutes(
       },
     },
     async (request, reply) => {
+      const headerResult = userIdHeader.safeParse(request.headers);
+      if (!headerResult.success) throw new ValidationError('Missing or invalid X-User-Id header');
+
       const result = createProfileBody.safeParse(request.body);
-      if (!result.success) {
-        throw new ValidationError(result.error.issues[0].message);
-      }
+      if (!result.success) throw new ValidationError(result.error.issues[0].message);
 
       const { birthday, ...rest } = result.data;
       const data = await profileService.createProfile({
+        id: headerResult.data['x-user-id'],
         ...rest,
         birthday: birthday ? new Date(birthday) : undefined,
       });

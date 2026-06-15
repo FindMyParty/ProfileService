@@ -89,7 +89,8 @@ Erros de banco (chave duplicada) precisam ser capturados no use case e convertid
 
 ## Decisões técnicas
 
-- **ID fornecido pelo caller**: `POST /profiles` recebe `id` no body (não gera UUID) porque o profile representa o usuário autenticado — o ID deve coincidir com o do auth-service.
+- **ID do Profile vem do API Gateway**: `POST /profiles` lê o `id` do header `X-User-Id` (injetado pelo Gateway após validar o JWT) — não aceita `id` no body e não gera UUID. O ID deve coincidir com o do auth-service. Todas as demais entidades (character, theme, rpg-class, system) geram UUID internamente via `crypto.randomUUID()`.
+- **Sem auth no serviço**: enforcement de autenticação é responsabilidade do API Gateway. O ProfileService confia no header `X-User-Id` como fonte de identidade.
 - **latitude/longitude como DECIMAL separados**: Kysely não tem suporte nativo a tipos geométricos do PostgreSQL.
 - **TypeScript first**: primeiro serviço TS do ecossistema FindMyParty (skeleton-service é JS).
 - **Sem auth no serviço**: enforcement é responsabilidade do API Gateway. O serviço confia no `id` fornecido pelo caller.

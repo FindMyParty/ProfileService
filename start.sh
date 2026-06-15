@@ -125,6 +125,13 @@ if [[ "$OBSERVABILITY" == "true" ]]; then
 fi
 echo ""
 
+# ─── Load .env into environment ──────────────────────────────────────────────
+set -a
+# shellcheck disable=SC1091
+source .env
+set +a
+success ".env loaded."
+
 # ─── Start service ───────────────────────────────────────────────────────────
 info "Starting profile-service (npm run dev)..."
 npm run dev

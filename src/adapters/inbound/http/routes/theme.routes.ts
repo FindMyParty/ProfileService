@@ -4,7 +4,6 @@ import type { ThemeService } from '../../../../application/services/theme.servic
 import { ValidationError } from '../../../../shared/errors.js';
 
 const createThemeBody = z.object({
-  id: z.string().uuid(),
   name: z.string().min(1).max(255),
 });
 
@@ -43,9 +42,8 @@ export default async function themeRoutes(
         summary: 'Criar tema',
         body: {
           type: 'object',
-          required: ['id', 'name'],
+          required: ['name'],
           properties: {
-            id: { type: 'string', format: 'uuid' },
             name: { type: 'string', minLength: 1, maxLength: 255 },
           },
         },

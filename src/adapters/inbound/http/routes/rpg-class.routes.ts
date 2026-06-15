@@ -4,7 +4,6 @@ import type { RpgClassService } from '../../../../application/services/rpg-class
 import { ValidationError } from '../../../../shared/errors.js';
 
 const createRpgClassBody = z.object({
-  id: z.string().uuid(),
   name: z.string().min(1).max(255),
 });
 
@@ -43,9 +42,8 @@ export default async function rpgClassRoutes(
         summary: 'Criar classe',
         body: {
           type: 'object',
-          required: ['id', 'name'],
+          required: ['name'],
           properties: {
-            id: { type: 'string', format: 'uuid' },
             name: { type: 'string', minLength: 1, maxLength: 255 },
           },
         },
