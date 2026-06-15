@@ -7,7 +7,15 @@ import { AppError } from '../../../shared/errors.js';
 import { loggerConfig } from '../../../shared/logger.js';
 import healthRoutes from './routes/health.js';
 import profileRoutes from './routes/profile.routes.js';
+import themeRoutes from './routes/theme.routes.js';
+import rpgClassRoutes from './routes/rpg-class.routes.js';
+import systemRoutes from './routes/system.routes.js';
+import characterRoutes from './routes/character.routes.js';
 import type { ProfileService } from '../../../application/services/profile.service.js';
+import type { ThemeService } from '../../../application/services/theme.service.js';
+import type { RpgClassService } from '../../../application/services/rpg-class.service.js';
+import type { SystemService } from '../../../application/services/system.service.js';
+import type { CharacterService } from '../../../application/services/character.service.js';
 
 const errorSchema = {
   $id: 'Error',
@@ -25,6 +33,10 @@ const errorSchema = {
 
 export async function buildServer(options: {
   profileService: ProfileService;
+  themeService: ThemeService;
+  rpgClassService: RpgClassService;
+  systemService: SystemService;
+  characterService: CharacterService;
   dependencyCheckers?: Record<string, () => Promise<string>>;
 }) {
   const fastify = Fastify({ logger: loggerConfig });
@@ -75,6 +87,22 @@ export async function buildServer(options: {
 
   await fastify.register(profileRoutes, {
     profileService: options.profileService,
+  });
+
+  await fastify.register(themeRoutes, {
+    themeService: options.themeService,
+  });
+
+  await fastify.register(rpgClassRoutes, {
+    rpgClassService: options.rpgClassService,
+  });
+
+  await fastify.register(systemRoutes, {
+    systemService: options.systemService,
+  });
+
+  await fastify.register(characterRoutes, {
+    characterService: options.characterService,
   });
 
   return fastify;

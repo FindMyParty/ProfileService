@@ -20,10 +20,22 @@ import { buildServer } from './adapters/inbound/http/server.js';
 import { checkPostgres, closeDatabase } from './adapters/outbound/db/client.js';
 import { runMigrations } from './adapters/outbound/db/migrator.js';
 import { PostgresProfileRepository } from './adapters/outbound/db/postgres-profile.repository.js';
+import { PostgresThemeRepository } from './adapters/outbound/db/postgres-theme.repository.js';
+import { PostgresRpgClassRepository } from './adapters/outbound/db/postgres-rpg-class.repository.js';
+import { PostgresSystemRepository } from './adapters/outbound/db/postgres-system.repository.js';
+import { PostgresCharacterRepository } from './adapters/outbound/db/postgres-character.repository.js';
 import { createAmqpPublisher } from './adapters/outbound/messaging/publisher.js';
 import { registerSubscribers } from './adapters/outbound/messaging/subscriber.js';
 import { ProfileUseCase } from './domain/use-cases/profile.use-case.js';
+import { ThemeUseCase } from './domain/use-cases/theme.use-case.js';
+import { RpgClassUseCase } from './domain/use-cases/rpg-class.use-case.js';
+import { SystemUseCase } from './domain/use-cases/system.use-case.js';
+import { CharacterUseCase } from './domain/use-cases/character.use-case.js';
 import { ProfileService } from './application/services/profile.service.js';
+import { ThemeService } from './application/services/theme.service.js';
+import { RpgClassService } from './application/services/rpg-class.service.js';
+import { SystemService } from './application/services/system.service.js';
+import { CharacterService } from './application/services/character.service.js';
 
 async function main() {
   // 3. Connect database and run pending migrations
@@ -44,9 +56,29 @@ async function main() {
   const profileUseCase = new ProfileUseCase({ profileRepository, eventPublisher: publisher });
   const profileService = new ProfileService({ profileUseCase });
 
+  const themeRepository = new PostgresThemeRepository();
+  const themeUseCase = new ThemeUseCase({ themeRepository });
+  const themeService = new ThemeService({ themeUseCase });
+
+  const rpgClassRepository = new PostgresRpgClassRepository();
+  const rpgClassUseCase = new RpgClassUseCase({ rpgClassRepository });
+  const rpgClassService = new RpgClassService({ rpgClassUseCase });
+
+  const systemRepository = new PostgresSystemRepository();
+  const systemUseCase = new SystemUseCase({ systemRepository });
+  const systemService = new SystemService({ systemUseCase });
+
+  const characterRepository = new PostgresCharacterRepository();
+  const characterUseCase = new CharacterUseCase({ characterRepository });
+  const characterService = new CharacterService({ characterUseCase });
+
   // 6. Start HTTP server
   const server = await buildServer({
     profileService,
+    themeService,
+    rpgClassService,
+    systemService,
+    characterService,
     dependencyCheckers: {
       postgres: checkPostgres,
       rabbitmq: checkRabbitMQ,
