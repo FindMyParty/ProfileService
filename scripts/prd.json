@@ -17,8 +17,8 @@
         "tsc --noEmit passa sem erros"
       ],
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented in full scaffold iteration. All source files created, tsc --noEmit passes."
     },
     {
       "id": "US-002",
@@ -32,8 +32,8 @@
         "tsc --noEmit passa sem erros"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Migration created with all columns. Uses sql template for decimal types. ifNotExists for idempotency."
     },
     {
       "id": "US-003",
@@ -51,8 +51,8 @@
         "tsc --noEmit passa sem erros"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Full entity with Zod validation, Experience enum, all methods implemented."
     },
     {
       "id": "US-004",
@@ -68,8 +68,8 @@
         "tsc --noEmit passa sem erros"
       ],
       "priority": 4,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Full PostgreSQL repository with Kysely queries. Private #toEntity for snake_case->camelCase mapping."
     },
     {
       "id": "US-005",
@@ -84,8 +84,8 @@
         "tsc --noEmit passa sem erros"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Full use case with NotFoundError, event publishing to profile.profile.created and profile.profile.updated."
     },
     {
       "id": "US-006",
@@ -97,8 +97,8 @@
         "tsc --noEmit passa sem erros"
       ],
       "priority": 6,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "ProfileService delegates to ProfileUseCase and returns toJSON() DTOs."
     },
     {
       "id": "US-007",
@@ -115,8 +115,8 @@
         "tsc --noEmit passa sem erros"
       ],
       "priority": 7,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "POST /profiles route with Zod validation and OpenAPI schema. 409 handled by DB unique constraint propagated as error."
     },
     {
       "id": "US-008",
@@ -133,8 +133,8 @@
         "tsc --noEmit passa sem erros"
       ],
       "priority": 8,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "PUT /profiles/:id with all optional fields, 404 via NotFoundError from use case."
     },
     {
       "id": "US-009",
@@ -148,8 +148,8 @@
         "tsc --noEmit passa sem erros"
       ],
       "priority": 9,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "GET /profiles/:id with OpenAPI schema. 404 via NotFoundError from use case."
     },
     {
       "id": "US-010",
@@ -164,8 +164,8 @@
         "tsc --noEmit passa sem erros"
       ],
       "priority": 10,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "publisher.ts asserts profile.events topic exchange. Persistent messages. Confirm channel with ack callback."
     },
     {
       "id": "US-011",
@@ -179,8 +179,8 @@
         "docs/adr/003-event-publishing.md explicando a decisão de publicar eventos a cada mutação"
       ],
       "priority": 11,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "README.md, CLAUDE.md, and 3 ADRs created."
     }
   ]
 }
