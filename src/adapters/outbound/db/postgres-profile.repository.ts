@@ -85,6 +85,60 @@ export class PostgresProfileRepository implements IProfileRepository {
     return (await this.findById(profile.id))!;
   }
 
+  async findAll(): Promise<Profile[]> {
+    const rows = await db.selectFrom('profiles').selectAll().execute();
+    if (rows.length === 0) return [];
+
+    const ids = rows.map((r) => r.id);
+
+    const [allClasses, allSystems, allThemes] = await Promise.all([
+      db
+        .selectFrom('profile_classes')
+        .innerJoin('classes', 'classes.id', 'profile_classes.id_classes')
+        .where('profile_classes.id_profile', 'in', ids)
+        .select(['profile_classes.id_profile', 'classes.id', 'classes.name'])
+        .execute(),
+      db
+        .selectFrom('profile_systems')
+        .innerJoin('systems', 'systems.id', 'profile_systems.id_systems')
+        .where('profile_systems.id_profile', 'in', ids)
+        .select(['profile_systems.id_profile', 'systems.id', 'systems.name'])
+        .execute(),
+      db
+        .selectFrom('profile_themes')
+        .innerJoin('themes', 'themes.id', 'profile_themes.id_themes')
+        .where('profile_themes.id_profile', 'in', ids)
+        .select(['profile_themes.id_profile', 'themes.id', 'themes.name'])
+        .execute(),
+    ]);
+
+    return rows.map((row) =>
+      Profile.fromPersistence(
+        {
+          id: row.id,
+          name: row.name,
+          birthday: row.birthday,
+          description: row.description,
+          latitude: row.latitude,
+          longitude: row.longitude,
+          last_login: row.last_login,
+          is_dm: row.is_dm,
+          is_player: row.is_player,
+          is_active: row.is_active,
+          is_remote: row.is_remote,
+          experience: row.experience,
+          created_at: row.created_at,
+          updated_at: row.updated_at,
+        },
+        {
+          classes: allClasses.filter((c) => c.id_profile === row.id).map(({ id, name }) => ({ id, name })),
+          systems: allSystems.filter((s) => s.id_profile === row.id).map(({ id, name }) => ({ id, name })),
+          themes: allThemes.filter((t) => t.id_profile === row.id).map(({ id, name }) => ({ id, name })),
+        },
+      ),
+    );
+  }
+
   async findById(id: string): Promise<Profile | null> {
     const row = await db.selectFrom('profiles').selectAll().where('id', '=', id).executeTakeFirst();
     if (!row) return null;

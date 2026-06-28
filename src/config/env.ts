@@ -16,6 +16,7 @@ const envSchema = z.object({
     .default('info'),
   OTEL_EXPORTER_OTLP_ENDPOINT: z.string().url(),
   SENTRY_DSN: z.string().url().optional().or(z.literal('')),
+  PROFILE_EVENT_ROUTING_KEY: z.string().default('profile.profile.updated'),
 });
 
 function loadEnv() {

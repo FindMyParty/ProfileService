@@ -22,4 +22,8 @@ export class ProfileService {
     const profile = await this.#profileUseCase.updateProfile(id, data);
     return profile.toJSON();
   }
+
+  async resyncProfiles() {
+    return this.#profileUseCase.resyncProfiles();
+  }
 }

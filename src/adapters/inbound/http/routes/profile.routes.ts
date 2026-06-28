@@ -148,6 +148,30 @@ export default async function profileRoutes(
     },
   );
 
+  if (process.env.NODE_ENV !== 'production') {
+    fastify.post(
+      '/profiles/resync',
+      {
+        schema: {
+          tags: ['Profiles'],
+          summary: 'Republicar todos os perfis na fila de eventos',
+          response: {
+            200: {
+              type: 'object',
+              properties: {
+                published: { type: 'number', description: 'Quantidade de eventos publicados' },
+              },
+            },
+          },
+        },
+      },
+      async (_request, reply) => {
+        const published = await profileService.resyncProfiles();
+        return reply.status(200).send({ published });
+      },
+    );
+  }
+
   fastify.put(
     '/profiles/:id',
     {

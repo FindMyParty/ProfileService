@@ -53,7 +53,11 @@ async function main() {
   await registerSubscribers(connection);
 
   // Wire dependencies
-  const profileUseCase = new ProfileUseCase({ profileRepository, eventPublisher: publisher });
+  const profileUseCase = new ProfileUseCase({
+    profileRepository,
+    eventPublisher: publisher,
+    profileEventRoutingKey: env.PROFILE_EVENT_ROUTING_KEY,
+  });
   const profileService = new ProfileService({ profileUseCase });
 
   const themeRepository = new PostgresThemeRepository();

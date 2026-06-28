@@ -4,24 +4,23 @@ import type { IEventPublisher } from '../ports/outbound/event-publisher.port.js'
 import type { IProfileUseCase } from '../ports/inbound/profile-use-case.port.js';
 import { NotFoundError } from '../../shared/errors.js';
 
-const EVENTS = Object.freeze({
-  CREATED: 'profile.profile.created',
-  UPDATED: 'profile.profile.updated',
-});
-
 export class ProfileUseCase implements IProfileUseCase {
   #profileRepository: IProfileRepository;
   #eventPublisher: IEventPublisher;
+  #profileEventRoutingKey: string;
 
   constructor({
     profileRepository,
     eventPublisher,
+    profileEventRoutingKey,
   }: {
     profileRepository: IProfileRepository;
     eventPublisher: IEventPublisher;
+    profileEventRoutingKey: string;
   }) {
     this.#profileRepository = profileRepository;
     this.#eventPublisher = eventPublisher;
+    this.#profileEventRoutingKey = profileEventRoutingKey;
   }
 
   async #getProfileOrThrow(id: string): Promise<Profile> {
@@ -33,7 +32,7 @@ export class ProfileUseCase implements IProfileUseCase {
   async createProfile(data: CreateProfileData): Promise<Profile> {
     const profile = Profile.create(data);
     const saved = await this.#profileRepository.save(profile);
-    await this.#eventPublisher.publish(EVENTS.CREATED, saved.toJSON());
+    await this.#eventPublisher.publish(this.#profileEventRoutingKey, saved.toJSON());
     return saved;
   }
 
@@ -45,7 +44,15 @@ export class ProfileUseCase implements IProfileUseCase {
     const profile = await this.#getProfileOrThrow(id);
     profile.update(data);
     const updated = await this.#profileRepository.update(profile);
-    await this.#eventPublisher.publish(EVENTS.UPDATED, updated.toJSON());
+    await this.#eventPublisher.publish(this.#profileEventRoutingKey, updated.toJSON());
     return updated;
+  }
+
+  async resyncProfiles(): Promise<number> {
+    const profiles = await this.#profileRepository.findAll();
+    await Promise.all(
+      profiles.map((p) => this.#eventPublisher.publish(this.#profileEventRoutingKey, p.toJSON())),
+    );
+    return profiles.length;
   }
 }

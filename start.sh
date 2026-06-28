@@ -89,6 +89,11 @@ else
   success "node_modules found."
 fi
 
+# ─── RabbitMQ: check if already up ─────────────────────────────────────────
+rabbitmq_is_up() {
+  curl -sf -u guest:guest http://localhost:15672/api/healthchecks/node &>/dev/null
+}
+
 # ─── Docker Compose ─────────────────────────────────────────────────────────
 COMPOSE_FILES="-f docker-compose.yml"
 if [[ "$OBSERVABILITY" == "true" ]]; then
@@ -97,8 +102,14 @@ if [[ "$OBSERVABILITY" == "true" ]]; then
 fi
 
 info "Starting Docker Compose services..."
-# shellcheck disable=SC2086
-docker compose $COMPOSE_FILES up -d
+if rabbitmq_is_up; then
+  warn "RabbitMQ already running on :5672 — skipping container"
+  # shellcheck disable=SC2086
+  docker compose $COMPOSE_FILES up -d --scale rabbitmq=0
+else
+  # shellcheck disable=SC2086
+  docker compose $COMPOSE_FILES up -d
+fi
 
 # ─── Wait for Postgres ──────────────────────────────────────────────────────
 info "Waiting for Postgres to be ready..."
@@ -109,7 +120,13 @@ success "Postgres is ready."
 
 # ─── Wait for RabbitMQ ──────────────────────────────────────────────────────
 info "Waiting for RabbitMQ to be ready..."
-until docker compose $COMPOSE_FILES exec -T rabbitmq rabbitmq-diagnostics check_port_connectivity &>/dev/null; do
+RETRIES=30
+until rabbitmq_is_up; do
+  RETRIES=$((RETRIES - 1))
+  if [[ "$RETRIES" -le 0 ]]; then
+    error "RabbitMQ did not become healthy in time."
+    exit 1
+  fi
   sleep 2
 done
 success "RabbitMQ is ready."
